@@ -45,7 +45,7 @@ def crawl():
 
 
 def check_blog_position(keyword, blog_id):
-    logger.info("keyword : ", keyword)
+    logger.info(f"keyword : {keyword}")
     url = f"https://search.naver.com/search.naver?query={keyword}"
     response = requests.get(url)
     soup = BeautifulSoup(response.text, "html.parser")
@@ -56,10 +56,10 @@ def check_blog_position(keyword, blog_id):
 
     for sc_new in sc_new_list:
         user_thumb_list = sc_new.find_all("a", {"class", "user_thumb"})
-        logger.info("blog count : ", len(user_thumb_list))
+        logger.info(f"blog count : {len(user_thumb_list)}")
         for idx, tag in enumerate(user_thumb_list, start=1):
             href = tag.get("href", "")
-            logger.info("link : ", href)
+            logger.info(f"link : {href}")
             if blog_id in href:
                 result.append((idx, keyword))
 
@@ -71,13 +71,13 @@ def check_blog_position(keyword, blog_id):
 
         if headline:
             theme = headline.get_text()
-            logger.info("theme : ", theme)
+            logger.info(f"theme : {theme}")
 
         thumb_anchor_list = sc_new.find_all(class_=re.compile("fds-thumb-anchor"))
-        logger.info("blog count : ", len(thumb_anchor_list))
+        logger.info(f"blog count : {len(thumb_anchor_list)}")
         for idx, thumb_anchor in enumerate(thumb_anchor_list, start=1):
             href = thumb_anchor.get("href", "")
-            logger.info("link : ", href)
+            logger.info(f"link : {href}")
             if blog_id in href:
                 result.append((idx, theme))
 
