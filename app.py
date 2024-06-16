@@ -90,4 +90,4 @@ if __name__ == "__main__":
             debug=True, port=5000, host="127.0.0.1"
         )  # 외부에서 접속 가능하도록 설정
     else:
-        app.run(debug=True, port=5000, host="0.0.0.0")  # 외부에서 접속 가능하도록 설정
+        app.run(debug=True)  # 외부에서 접속 가능하도록 설정
