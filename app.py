@@ -50,8 +50,7 @@ def check_blog_position(keyword, blog_id):
     logger.info(f"keyword : {keyword}")
     url = f"https://search.naver.com/search.naver?query={keyword}"
     response = requests.get(url)
-    
-    response_data = response.json()
+
     # 응답 내용을 로깅
     try:
         response.raise_for_status()  # HTTP 오류가 발생했는지 확인
@@ -64,7 +63,7 @@ def check_blog_position(keyword, blog_id):
         logger.error(f"HTTP error occurred: {http_err}")
     except Exception as err:
         logger.error(f"Other error occurred: {err}")
-        
+
     soup = BeautifulSoup(response.text, "html.parser")
 
     result = []
