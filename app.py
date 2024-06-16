@@ -52,7 +52,18 @@ def check_blog_position(keyword, blog_id):
     response = requests.get(url)
     
     response_data = response.json()
-    logger.info(f"Response JSON: {json.dumps(response_data, indent=2)}")
+    # 응답 내용을 로깅
+    try:
+        response.raise_for_status()  # HTTP 오류가 발생했는지 확인
+        try:
+            response_data = response.json()
+            logger.info(f"Response JSON: {json.dumps(response_data, indent=2)}")
+        except json.JSONDecodeError:
+            logger.info(f"Response Text: {response.text}")
+    except requests.exceptions.HTTPError as http_err:
+        logger.error(f"HTTP error occurred: {http_err}")
+    except Exception as err:
+        logger.error(f"Other error occurred: {err}")
         
     soup = BeautifulSoup(response.text, "html.parser")
 
