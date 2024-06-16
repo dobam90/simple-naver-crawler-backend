@@ -50,6 +50,8 @@ def check_blog_position(keyword, blog_id):
     logger.info(f"keyword : {keyword}")
     url = f"https://search.naver.com/search.naver?query={keyword}"
     response = requests.get(url)
+    
+    logger.info(f"response data: {json.dumps(response, indent=2)}")
     soup = BeautifulSoup(response.text, "html.parser")
 
     result = []
