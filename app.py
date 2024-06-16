@@ -48,9 +48,12 @@ def crawl():
 
 def check_blog_position(keyword, blog_id):
     logger.info(f"keyword : {keyword}")
-    
+
     url = f"https://search.naver.com/search.naver?query={keyword}"
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Referer": "https://www.naver.com/",
+    }
     response = requests.get(url, headers=headers)
 
     # 응답 내용을 로깅
