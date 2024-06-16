@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 import os
 import logging
 import re
+import json
 from dotenv import load_dotenv
 
 # Create the Flask application
@@ -24,6 +25,7 @@ if not os.path.exists(UPLOAD_FOLDER):
 @app.route("/crawl", methods=["POST"])
 def crawl():
     data = request.get_json()
+    logger.info(f"Received data: {json.dumps(data, indent=2)}")
 
     # 여기에서 데이터를 처리합니다.
     # 예를 들어, 각 항목에 새로운 필드를 추가할 수 있습니다.
