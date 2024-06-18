@@ -25,7 +25,7 @@ if not os.path.exists(UPLOAD_FOLDER):
 @app.route("/crawl", methods=["POST"])
 def crawl():
     data = request.get_json()
-    logger.info(f"Received data: {json.dumps(data, indent=2)}")
+    # logger.info(f"Received data: {json.dumps(data, indent=2)}")
 
     # 여기에서 데이터를 처리합니다.
     # 예를 들어, 각 항목에 새로운 필드를 추가할 수 있습니다.
@@ -61,9 +61,11 @@ def check_blog_position(keyword, blog_id):
         response.raise_for_status()  # HTTP 오류가 발생했는지 확인
         try:
             response_data = response.json()
-            logger.info(f"Response JSON: {json.dumps(response_data, indent=2)}")
+            # logger.info(f"Response JSON: {json.dumps(response_data, indent=2)}")
+            logger.info(f"Response OK")
         except json.JSONDecodeError:
-            logger.info(f"Response Text: {response.text}")
+            # logger.info(f"Response Text: {response.text}")
+            logger.error(f"JSONDecodeError")
     except requests.exceptions.HTTPError as http_err:
         logger.error(f"HTTP error occurred: {http_err}")
     except Exception as err:
