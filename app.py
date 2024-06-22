@@ -2,22 +2,13 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
 from bs4 import BeautifulSoup
-import os
 import logging
-import re
-from dotenv import load_dotenv
 
-# Create the Flask application
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-UPLOAD_FOLDER = "uploads"
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
 
 @app.route("/crawl", methods=["POST"])
 def crawl():
@@ -27,9 +18,7 @@ def crawl():
     results = []
 
     if keyword and blog_ids:
-        # 네이버에 한 번만 요청
-        position_list = check_blog_position(keyword, blog_ids)
-        results.extend(position_list)
+        results = check_blog_position(keyword, blog_ids)
 
     return jsonify(results)
 
@@ -53,48 +42,84 @@ def check_blog_position(keyword, blog_ids):
     soup = BeautifulSoup(response.text, "html.parser")
     result = []
 
-    sc_new_list = soup.find_all(class_=re.compile("sc_new sp_nreview"))
+    # 케이스 1 확인 및 처리 (상위 노출 및 일반 검색 결과)
+    case1_containers = soup.find_all("div", class_="spw_rerank type_head _rra_head")
+    if case1_containers:
+        result.extend(parse_case1(case1_containers, keyword, blog_ids))
 
-    for sc_new in sc_new_list:
-        user_thumb_list = sc_new.find_all("a", {"class", "user_thumb"})
-        for idx, tag in enumerate(user_thumb_list, start=1):
-            href = tag.get("href", "")
-            for blog_id in blog_ids:
-                if blog_id in href:
-                    result.append({
-                        "Keyword": keyword,
-                        "Blog ID": blog_id,
-                        "Position": idx,
-                        "Theme": keyword  # 또는 다른 테마가 있다면 적절히 변경
-                    })
-
-    sc_new_list = soup.find_all("div", {"class": "sc_new _slog_visible"})
-
-    for sc_new in sc_new_list:
-        theme = keyword
-        headline = sc_new.find(class_=re.compile("fds-comps-header-headline"))
-
-        if headline:
-            theme = headline.get_text()
-
-        thumb_anchor_list = sc_new.find_all(class_=re.compile("fds-thumb-anchor"))
-        for idx, thumb_anchor in enumerate(thumb_anchor_list, start=1):
-            href = thumb_anchor.get("href", "")
-            for blog_id in blog_ids:
-                if blog_id in href:
-                    result.append({
-                        "Keyword": keyword,
-                        "Blog ID": blog_id,
-                        "Position": idx,
-                        "Theme": theme
-                    })
+    general_results_case1 = soup.find_all("div", class_="spw_rerank _rra_body")
+    if general_results_case1:
+        result.extend(parse_general_results(general_results_case1, keyword, blog_ids, "일반 검색 결과"))
+    
+    # 케이스 2 확인 및 처리
+    case2_containers = soup.find_all("section", class_="sc_new sp_nreview _fe_view_root _prs_ugB_bsR")
+    if case2_containers:
+        result.extend(parse_case2(case2_containers, keyword, blog_ids))
+    
+    # 케이스 3 확인 및 처리
+    case3_containers = soup.find_all("div", class_="sc_new _slog_visible")
+    if case3_containers:
+        result.extend(parse_case3(case3_containers, keyword, blog_ids))
+    
+    # 일반 검색 결과 확인 및 처리
+    general_results = soup.find_all("section", class_="sc_new sp_ntotal _sp_ntotal _prs_web_gen _fe_root_web_gend")
+    if general_results:
+        result.extend(parse_general_results(general_results, keyword, blog_ids, "일반 검색 결과"))
 
     return result
 
+def parse_case1(containers, keyword, blog_ids):
+    result = []
+    for container in containers:
+        items = container.find_all("section", class_="sc_new sp_nreview _fe_view_root")
+        result.extend(parse_items(items, keyword, blog_ids, "상위 노출"))
+    return result
+
+def parse_case2(containers, keyword, blog_ids):
+    result = []
+    for container in containers:
+        items = container.find_all("li", class_="bx")
+        filtered_items = [item for item in items if "bx" in item["class"] and len(item["class"]) == 1]
+        result.extend(parse_items(filtered_items, keyword, blog_ids, "블로그 인기글"))
+    return result
+
+def parse_case3(containers, keyword, blog_ids):
+    result = []
+    for container in containers:
+        theme = container.find("span", class_="fds-comps-header-headline").get_text(strip=True) if container.find("span", class_="fds-comps-header-headline") else keyword
+        items = container.find_all("div", class_="fds-ugc-block-mod")
+        result.extend(parse_items(items, keyword, blog_ids, theme))
+    return result
+
+def parse_general_results(containers, keyword, blog_ids, section):
+    result = []
+    for container in containers:
+        items = container.find_all("li", class_="bx")
+        filtered_items = [item for item in items if "bx" in item["class"] and len(item["class"]) == 1]
+        result.extend(parse_items(filtered_items, keyword, blog_ids, section))
+    return result
+
+def parse_items(items, keyword, blog_ids, section):
+    result = []
+    for idx, item in enumerate(items, start=1):
+        # 썸네일의 블로그 링크를 찾기
+        thumbnail_tag = item.find("a", class_="user_thumb") or item.find("a", class_="thumb")
+        href = thumbnail_tag["href"] if thumbnail_tag else ""
+        
+        # 제목 찾기
+        title_tag = item.find("a", class_="title_link") or item.find("a", class_="link_tit")
+        title = title_tag.get_text(strip=True) if title_tag else "No Title"
+        
+        for blog_id in blog_ids:
+            if blog_id in href:
+                result.append({
+                    "Keyword": keyword,
+                    "Blog ID": blog_id,
+                    "Section": section,
+                    "Position": idx,
+                    "Title": title
+                })
+    return result
+
 if __name__ == "__main__":
-    if os.getenv("FLASK_ENV") == "development":
-        app.run(
-            debug=True, port=5000, host="127.0.0.1"
-        )
-    else:
-        app.run(debug=True)
+    app.run(debug=True)
